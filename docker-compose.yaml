@@ -1,0 +1,61 @@
+version: '3.3'
+
+services:
+    redis:
+        image: redis
+        ports:
+            - '6379:6379'
+    db:
+        restart: always
+        image: postgres:latest
+        container_name: mlflow_db
+        expose:
+            - ${DB_PORT}
+        environment:
+            - POSTGRES_DB=${DB_NAME}
+            - POSTGRES_USER=${DB_USER}
+            - POSTGRES_PASSWORD=${DB_PW}
+        volumes:
+            - db_datapg:/var/lib/postgresql/data
+
+    mlflow:
+        restart: always
+        build: ./mlflow
+        image: mlflow_server
+        container_name: mlflow_server
+        ports:
+          - 5000:5000
+        environment:
+            - BACKEND=postgresql://${DB_USER}:${DB_PW}@db:${DB_PORT}/${DB_NAME}
+            - ARTIFACTS=/mlruns
+        volumes:
+            - mlrun_data:/mlruns
+        command:
+            - sh
+            - -c
+            - mlflow server
+                --port ${MLFLOW_PORT}
+                --host 0.0.0.0
+                --backend-store-uri $${BACKEND}
+                --default-artifact-root $${ARTIFACTS}
+        depends_on:
+            - db
+    celery:
+        build: ./celery
+        volumes:
+            - ./celery:/celery
+        depends_on:
+            - redis
+    app:
+        build: ./app
+        volumes:
+          - ./app:/app
+        ports:
+          - 9091:8000
+        depends_on:
+          - celery
+        expose:
+          - 9091
+volumes:
+    db_datapg:
+    mlrun_data:

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Check result</title>
+</head>
+<body>
+    <label id="answer">Here will be answer</label>
+    <button onclick="return check()">Check result</button>
+</body>
+</html>
+
+<script>
+    function check() {
+        const http = new XMLHttpRequest()
+        http.open('POST', '/iris/{{ value }}')
+        http.setRequestHeader('Content-type', 'application/json')
+        http.send() // Make sure to stringify
+        http.onload = function() {
+            document.getElementById('answer').innerHTML = http.responseText
+        }
+    }
+</script>
